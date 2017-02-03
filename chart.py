@@ -4,7 +4,7 @@ import sqlite3
 import sys
 import cgi
 import cgitb
-import datetime
+import tempsensor
 
 dbname = "/home/pi/sensorlog.db"
 
@@ -49,7 +49,10 @@ def create_table_all(rows):
 			output_temps.append(row[2])
 
 	# the number of sensors is len(sensors)
-	
+
+	sensor_mgr = tempsensor.SensorsMgr(dbname)
+	sensor_mgr.read_sensors_from_db()	# get the list of sensors from the db!
+
 	# Now let's create our composite data table
 	current_timestamp = rows[0][1]
 	IsFirstRow = True
@@ -58,7 +61,9 @@ def create_table_all(rows):
 	# create our header dynamically based on # of sensors found
 	chart_table = "['Time'"
 	for i in range(len(sensors)):
-		chart_table += ",'Sensor{0}'".format(str(i))
+		sensor = sensor_mgr.get_sensor_by_index(sensors[i])
+		serial_id = sensor.get_serial_id()
+		chart_table += ",'T[{0}]'".format(serial_id[3:10])
 
 	chart_table += "],\n"
 
