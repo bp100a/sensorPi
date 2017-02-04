@@ -11,13 +11,13 @@ dbname = "/home/pi/sensorlog.db"
 def printHTTPheader():
 	print "Content-type: text/html\n\n"
 
-def printHTMLHead(title, table):
+def printHTMLHead(title, table, fahrenheit = False):
 	print "<head>"
 	print "	<title>"
 	print title
 	print "	</title>"
 
-	print_graph_script(table)
+	print_graph_script(table, fahrenheit)
 	print "</head>"
 	return
 
@@ -36,7 +36,7 @@ def get_data(interval_hours):
 	conn.close()
 	return rows
 
-def create_table_all(rows):
+def create_table_all(rows, fahrenheit = False):
 	if rows == None:
 		return None
 
@@ -56,7 +56,6 @@ def create_table_all(rows):
 	# Now let's create our composite data table
 	current_timestamp = rows[0][1]
 	IsFirstRow = True
-	rowstr = ""
 
 	# create our header dynamically based on # of sensors found
 	chart_table = "['Time'"
@@ -69,8 +68,12 @@ def create_table_all(rows):
 
 	for row in rows:
 		idx = sensors.index(row[0])
+		temp = float(row[2])
+		if fahrenheit == True:
+			temp = temp *1.8 + 32.0
+
 		if row[1] == current_timestamp:
-			output_temps[idx] = row[2]   # update temperature from sensor if available
+			output_temps[idx] = temp   # update temperature from sensor if available
 		else: # output info we have accumulated a row's worth of data
 			rowstr = "['{0}'".format(current_timestamp)
 			for i in range(len(sensors)):
@@ -78,7 +81,7 @@ def create_table_all(rows):
 
 			rowstr += "]" 
 			current_timestamp = row[1]
-			output_temps[idx] = row[2]
+			output_temps[idx] = temp
 
 			if IsFirstRow == True:
 				chart_table += rowstr
@@ -89,7 +92,7 @@ def create_table_all(rows):
 	return chart_table
 
 
-def print_graph_script(table):
+def print_graph_script(table, fahrenheight = False):
 
 	# create google chart snippet
 	chart_code = """
@@ -100,7 +103,7 @@ def print_graph_script(table):
 	function drawChart() {
 		var data = google.visualization.arrayToDataTable([%s]);
 
-		var options = { title: 'Temperature',
+		var options = { title: 'Temperature(%s)',
                                 curveType: 'function',
                                 legend:{position: 'bottom',
                                         textStyle:{fontSize: '11'}
@@ -112,7 +115,11 @@ def print_graph_script(table):
 		}
 		</script>"""
 
-	print chart_code % (table)
+	temp_scale = '\xB0C'
+	if fahrenheight == True:
+		temp_scale = '\xB0F'
+
+	print chart_code % (table, temp_scale)
 
 	return	
 
@@ -140,19 +147,21 @@ def show_stats():
 def main():
 	cgitb.enable()
 
+	fahrenheit = False	# display in celsius
+
 	records = get_data(None)
 
 	printHTTPheader()
 
 	if len(records) != 0:
-		table = create_table_all(records)
+		table = create_table_all(records, fahrenheit)
 	else:
 		print "No data found!"
 		return
 
 	# start printing the page
 	print "<html>"
-	printHTMLHead("Raspberry Pi Temperature logger", table)
+	printHTMLHead("Raspberry Pi Temperature logger", table, fahrenheit)
 
 	print "<body>"
 	print "<h1>Raspberry Pi Temperature Logger</h1>"
