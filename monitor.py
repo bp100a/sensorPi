@@ -6,40 +6,20 @@ import tempsensor
 dbname = '/home/pi/sensorlog.db'
 
 # ------------------------------------------------------
-def create_log_schema():
-	conn = sqlite3.connect(dbname)
+def create_log_schema(db_name):
+	conn = sqlite3.connect(db_name)
 	conn.execute("CREATE TABLE IF NOT EXISTS Temperature([timestamp] TIMESTAMP, temp NUMERIC, sensor INTEGER);")
 	conn.commit()
+	conn.close()
 	return
-
-
-# get_temperature()
-# =================
-# Read the temperature probes and return
-# a list of the celsius value(s)
-def get_temperature(sensor_mgr):
-	temperatures = []
-	sensor_mgr.read_sensors()	# read all the sensor data in
-
-	for sensor in sensor_mgr.get_sensor_list():
-		if sensor._active == False:		# ignore inactive sensors
-			continue
-		temp_c = sensor.get_temperature()
-		temp_f = ((temp_c * 9.0) / 5.0) + 32.0
-		sensor_id = sensor._sensor_id
-		temperatures.insert(sensor_id+1, temp_c)
-		print '[{0}]{1:.2f}C {2:.2f}F'.format(sensor_id, temp_c, temp_f),
-
-	return temperatures
-
 
 # log_data()
 # ==========
 # only writes to the database if the data has changed
 # or we are told to "force" a write.
 
-def log_data(sensor_list, force_logging):
-	conn = sqlite3.connect(dbname)
+def log_data(sensor_list, force_logging, db_name):
+	conn = sqlite3.connect(db_name)
 	curs = conn.cursor()
 	data_logged = False
 
@@ -53,6 +33,8 @@ def log_data(sensor_list, force_logging):
 
 		print '[{0}]{1:.2f}C {2:.2f}F'.format(sensor._sensor_id, sensor.get_temperature(), sensor.get_temperature(True)),
 
+		# only write out a temperature to the DB if we *have to*, meaning it has
+		# changed or there have been no changes in a long while so we are forcing a write
 		if sensor.get_dirty_temp() == False and force_logging == False:
 			continue
 
@@ -91,7 +73,7 @@ def main():
 	LOGGING_THRESHOLD = 10 * 60  # don't let more than 10 minutes elapse without logging
 
 	sampling_interval_seconds = 5  # every 5 seconds (our sampling interval)
-	create_log_schema()  # if our table doesn't exist, create it
+	create_log_schema(dbname)  # if our table doesn't exist, create it
 
 	sensor_mgr = tempsensor.SensorsMgr(dbname)
 
@@ -99,12 +81,13 @@ def main():
 	sensor_mgr.initialize_sensors()
 
 	sensors = sensor_mgr.find_sensors()
+
 	last_sleep_time = 0.0
 	time_last_logging = time.time()
 	while True:
 		sensor_mgr.read_sensors()	# read the temperature probes
 		data_logged = log_data(sensor_mgr.get_sensor_list(),
-							   (time.time() - time_last_logging) > LOGGING_THRESHOLD)
+							   (time.time() - time_last_logging) > LOGGING_THRESHOLD, dbname)
 		if data_logged:
 			time_last_logging = time.time()
 			print " (logged)"

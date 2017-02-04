@@ -12,19 +12,23 @@ class Sensor(object):
 	_active    = False
 	_temperature = None
 	_dirty_temp  = True
+	_base_temp   = None
 
 	def __init__(self, serial_id, sensor_id):
 		self._sensor_id = sensor_id  # internal index to identify sensor
 		self._serial_id = serial_id  # serial number of the sensor, device address
 		self._active    = False
+		self._base_temp = None
 
 	def get_temperature(self, farenheight=False):
 		if farenheight and self._temperature != None:
 			return (self._temperature * 1.8 + 32.0)
 		return self._temperature
 
-	_base_temp = None
 	def set_temperature(self, temperature):
+		if self._active == False:
+			return
+
 		if self._temperature is None:
 			self._dirty_temp = True
 			self._base_temp = temperature
