@@ -63,7 +63,7 @@ def create_table_all(rows):
 	for i in range(len(sensors)):
 		sensor = sensor_mgr.get_sensor_by_index(sensors[i])
 		serial_id = sensor.get_serial_id()
-		chart_table += ",'T[{0}]'".format(serial_id[3:10])
+		chart_table += ",'T[{0}]'".format(serial_id[3:])
 
 	chart_table += "],\n"
 
@@ -102,8 +102,10 @@ def print_graph_script(table):
 
 		var options = { title: 'Temperature',
                                 curveType: 'function',
-                                legend:{position: 'bottom'} };
-
+                                legend:{position: 'bottom',
+                                        textStyle:{fontSize: '11'}
+                                }
+                      };
 		var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
 		chart.draw(data, options);
 
