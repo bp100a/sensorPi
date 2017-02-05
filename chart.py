@@ -23,8 +23,8 @@ def printHTMLHead(title, table, fahrenheit = False):
 
 
 
-def get_data(interval_hours):
-	conn = sqlite3.connect(dbname)
+def get_data(interval_hours, db_name):
+	conn = sqlite3.connect(db_name)
 	curs = conn.cursor()
 
 	if interval_hours == None:
@@ -36,7 +36,7 @@ def get_data(interval_hours):
 	conn.close()
 	return rows
 
-def create_table_all(rows, fahrenheit = False):
+def create_table_all(rows, db_name, fahrenheit = False):
 	if rows == None:
 		return None
 
@@ -50,7 +50,7 @@ def create_table_all(rows, fahrenheit = False):
 
 	# the number of sensors is len(sensors)
 
-	sensor_mgr = tempsensor.SensorsMgr(dbname)
+	sensor_mgr = tempsensor.SensorsMgr(db_name)
 	sensor_mgr.read_sensors_from_db()	# get the list of sensors from the db!
 
 	# Now let's create our composite data table
@@ -140,8 +140,8 @@ def show_button(fahrenheit):
 	print "</form>"
 	return
 
-def show_stats():
-	conn=sqlite3.conn(dbname)
+def show_stats(db_name):
+	conn=sqlite3.conn(db_name)
 	curs=conn.cursor()
 
 	curs.execute("SELECT [timestamp], max(temp) FROM Temperature")
@@ -160,18 +160,18 @@ def main():
 	cgitb.enable()
 
 	form = cgi.FieldStorage()
-	fahrenheit = False	# display in celsius
+	fahrenheit = False	# default display to celsius
 	if form != None:
 		value = form.getvalue('temperature')
 		if value == 'fahrenheit':
 			fahrenheit = True
 
-	records = get_data(None)
+	records = get_data(None, dbname)
 
 	printHTTPheader()
 
 	if len(records) != 0:
-		table = create_table_all(records, fahrenheit)
+		table = create_table_all(records, dbname, fahrenheit)
 	else:
 		print "No data found!"
 		return
