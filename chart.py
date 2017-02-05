@@ -128,6 +128,18 @@ def show_graph():
 	print '<div id ="chart_div" style="width: 1200px; height: 600px;"></div>'
 	return
 
+def show_button(fahrenheit):
+	print "<form action=\"chart.py\" method=\"post\">"
+	if fahrenheit == True:
+		print "<input OnChange='this.form.submit();' type=\"radio\" name=\"temperature\" value=\"celsius\">\xB0Celsius<br>"
+		print "<input OnChange='this.form.submit();' type=\"radio\" name=\"temperature\" value=\"fahrenheit\" checked=\"checked\">\xB0Fahrenheit<br>"
+	else:
+		print "<input OnChange='this.form.submit();' type=\"radio\" name=\"temperature\" value=\"celsius\" checked=\"checked\">\xB0Celsius<br>"
+		print "<input OnChange='this.form.submit();' type=\"radio\" name=\"temperature\" value=\"fahrenheit\">\xB0Fahrenheit<br>"
+
+	print "</form>"
+	return
+
 def show_stats():
 	conn=sqlite3.conn(dbname)
 	curs=conn.cursor()
@@ -147,7 +159,12 @@ def show_stats():
 def main():
 	cgitb.enable()
 
+	form = cgi.FieldStorage()
 	fahrenheit = False	# display in celsius
+	if form != None:
+		value = form.getvalue('temperature')
+		if value == 'fahrenheit':
+			fahrenheit = True
 
 	records = get_data(None)
 
@@ -167,7 +184,8 @@ def main():
 	print "<h1>Raspberry Pi Temperature Logger</h1>"
 	print "<hr>"
 	show_graph()
-#	show_stats()
+	show_button(fahrenheit)
+
 	print "</body>"
 	print "</html>"
 	sys.stdout.flush()
